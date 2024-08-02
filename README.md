@@ -120,7 +120,7 @@ python server.py
 
 3. **Flower Client**: Run 50 instances of the Flower client (preferably on different machines or in different terminal windows):
 ```bash
-python client.py
+python client.py -c_id <Client ID>
 ```
 
 ## Contact
