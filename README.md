@@ -1,7 +1,7 @@
-# Federated Learning with MobileNetV2 using Flower Framework
+# Federated Learning using Flower Framework
 
 ## Summary
-This project demonstrates the implementation of a Federated Learning (FL) setting using the Flower framework and PyTorch. The Large-scale CelebFaces Attributes (CelebA) dataset is used for this purpose. The goal is to train a MobileNetV2 model in a federated manner with 50 clients and compare the model's performance across different demographic groups in the CelebA dataset.
+This project demonstrates the implementation of a Federated Learning (FL) setting using the Flower (https://flower.ai) and PyTorch. The Large-scale CelebFaces Attributes (CelebA) dataset is used for this purpose. The goal is to train a MobileNetV2 model in a federated manner with 50 clients and compare the model's performance across different demographic groups in the CelebA dataset.
 
 ## Method
 ### 1. Data Splitting
@@ -76,7 +76,7 @@ Analyze and compare the model's performance across different demographic groups 
 
   # Client setup
   class FlowerClient(fl.client.NumPyClient):
-      def get_parameters(self):
+      def get_parameters(self, config):
           # Return model parameters
           pass
 
