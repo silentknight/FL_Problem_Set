@@ -124,9 +124,4 @@ python client.py -c_id <Client ID>
 ```
 
 ## Contact
-For any questions or further information, please contact [your email].
-
-```
-
-This more detailed `README.md` file provides step-by-step instructions and explanations for each part of the project, ensuring that users can follow along and understand the implementation and results.
-```
+For any questions or further information, please contact mail@abhijitm.com.
