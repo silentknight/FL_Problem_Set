@@ -40,14 +40,26 @@ def load_data():
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
     ])
     dataset = CelebA(root="data", split="all", transform=transform, download=True)
     return dataset
 
 # Split dataset IID
 def iid_split(dataset, num_clients):
+    """
+    Splits the dataset into a IID distribution among clients.
+    
+    Parameters:
+    - dataset: The dataset to be split.
+    - num_clients: The number of clients.
+    
+    Returns:
+    - A dictionary where keys are client indices and values are lists of dataset indices.
+    """
     indices = np.random.permutation(len(dataset))
     split_indices = np.array_split(indices, num_clients)
+
     return [Subset(dataset, idx) for idx in split_indices]
 
 # Split dataset non-IID
@@ -81,6 +93,7 @@ class FlowerClient(fl.client.NumPyClient):
         self.set_parameters(parameters)
         self.model.train()
         for epoch in range(1):  # single epoch for demo
+            print(epoch)
             for inputs, labels in self.trainloader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 self.optimizer.zero_grad()
@@ -88,6 +101,7 @@ class FlowerClient(fl.client.NumPyClient):
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
+                print(loss)
         return self.get_parameters(), len(self.trainloader.dataset), {}
 
     def evaluate(self, parameters, config):
@@ -124,7 +138,7 @@ def main():
 
     # Initialize model
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = MobileNetV2(num_classes=5).to(device)  # Assuming classification across 5 demographics groups
+    model = MobileNetV2(num_classes=2).to(device)
 
     print("SUCCESS")
     # Start Flower client
