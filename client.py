@@ -2,6 +2,7 @@ import torch
 import torchvision.transforms as transforms
 from torchvision.datasets import CelebA
 from torch.utils.data import DataLoader, Subset, random_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import torch.nn as nn
 import torch.optim as optim
 import flwr as fl
@@ -37,6 +38,7 @@ class MobileNetV2(nn.Module):
 
 # Prepare CelebA dataset
 def load_data():
+    print("Data loaded")
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
@@ -58,6 +60,7 @@ def iid_split(dataset, num_clients):
     - A dictionary where keys are client indices and values are lists of dataset indices.
     """
 
+    print("Creating IID data")
     indices = np.random.permutation(len(dataset))
     split_indices = np.array_split(indices, num_clients)
 
@@ -65,6 +68,18 @@ def iid_split(dataset, num_clients):
 
 # Split dataset non-IID
 def non_iid_split(dataset, num_clients):
+    """
+    Splits the dataset into a non-IID distribution among clients.
+    
+    Parameters:
+    - dataset: The dataset to be split.
+    - num_clients: The number of clients.
+    
+    Returns:
+    - A dictionary where keys are client indices and values are lists of dataset indices.
+    """
+
+    print("Creating Non-IID splits")
     targets = dataset.attr[:, 20]  # Using the 'Smiling' attribute for example
     clients_data = []
     for client_id in range(num_clients):
@@ -72,6 +87,34 @@ def non_iid_split(dataset, num_clients):
         client_data = Subset(dataset, client_indices)
         clients_data.append(client_data)
     return clients_data
+
+# def non_iid_split(dataset, num_clients, num_shards_per_client=2):
+#     """
+#     Splits the dataset into a non-IID distribution among clients.
+    
+#     Parameters:
+#     - dataset: The dataset to be split.
+#     - num_clients: The number of clients.
+#     - num_shards_per_client: The number of shards per client (default: 2).
+    
+#     Returns:
+#     - A dictionary where keys are client indices and values are lists of dataset indices.
+#     """
+#     num_shards = num_clients * num_shards_per_client
+#     num_samples_per_shard = len(dataset) // num_shards
+
+#     # Sort the dataset by labels (assuming targets are available)
+#     indices = np.argsort(dataset.attr[:, 20].numpy())  # Example: using the 'Smiling' attribute
+    
+#     # Split indices into shards
+#     shards = [indices[i * num_samples_per_shard:(i + 1) * num_samples_per_shard] for i in range(num_shards)]
+    
+#     # Assign shards to clients
+#     client_data = {i: np.concatenate(shards[i * num_shards_per_client:(i + 1) * num_shards_per_client])
+#                    for i in range(num_clients)}
+
+#     print(client_data)    
+#     return client_data
 
 # Create Flower client
 class FlowerClient(fl.client.NumPyClient):
@@ -120,8 +163,8 @@ class FlowerClient(fl.client.NumPyClient):
         self.model.eval()
         loss = 0
         correct = 0,
-        # x_true = []
-        # y_true = []
+        x_true = []
+        y_true = []
 
         with torch.no_grad():
             for inputs, labels in self.testloader:
@@ -133,20 +176,19 @@ class FlowerClient(fl.client.NumPyClient):
                 pred = outputs.argmax(dim=1, keepdim=True)
                 correct += pred.eq(labels.view_as(pred)).sum().item()
 
-                # y_true.extend(labels.numpy())
-                # y_pred.extend(predicted.numpy())
+                y_true.extend(labels.numpy())
+                y_pred.extend(pred.numpy())
 
-        accuracy = correct / len(self.test_data)
+        accuracy = correct / correct / len(self.testloader.dataset)
 
-        # accuracy = accuracy_score(y_true, y_pred)
-        # precision = precision_score(y_true, y_pred, average='macro')
-        # recall = recall_score(y_true, y_pred, average='macro')
-        # f1 = f1_score(y_true, y_pred, average='macro')
+        accuracy_s = accuracy_score(y_true, y_pred)
+        precision = precision_score(y_true, y_pred, average='macro')
+        recall = recall_score(y_true, y_pred, average='macro')
+        f1 = f1_score(y_true, y_pred, average='macro')
 
-        print(f"Evaluation completed: Loss = {loss / len(test_loader):.4f}, Accuracy = {accuracy:.4f}")
+        print(f"Evaluation completed: Loss = {loss / len(testloader):.4f}, Accuracy = {accuracy:.4f}")
 
-        # return accuracy, precision, recall, f1
-        return float(loss) / len(self.testloader.dataset), len(self.testloader.dataset), {"accuracy": correct / len(self.testloader.dataset)}
+        return float(loss) / len(self.testloader.dataset), len(self.testloader.dataset), {"accuracy": accuracy}, {"accuracy_s": accuracy_s}, {"precision": precision}, {"recall": recall}, {"f1": f1}
 
 def main():
     # Load and preprocess data
