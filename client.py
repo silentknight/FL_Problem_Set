@@ -15,13 +15,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-c_id", "--client_id", type=int, required=True, default=0, help = "Client Index")
 args = parser.parse_args()
 
-warnings.filterwarnings("ignore", category=UserWarning)
+# warnings.filterwarnings("ignore", category=UserWarning)
 
 # Define MobileNetV2 model with a new classifier head
 class MobileNetV2(nn.Module):
     def __init__(self, num_classes):
         super(MobileNetV2, self).__init__()
-        mobilenet = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
+        mobilenet = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', weights='MobileNet_V2_Weights.DEFAULT')
         self.feature_extractor = mobilenet.features
         for param in self.feature_extractor.parameters():
             param.requires_grad = False
@@ -38,7 +38,6 @@ class MobileNetV2(nn.Module):
 
 # Prepare CelebA dataset
 def load_data():
-    print("Loading Data")
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
