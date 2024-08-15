@@ -38,7 +38,7 @@ class MobileNetV2(nn.Module):
 
 # Prepare CelebA dataset
 def load_data():
-    print("Data loaded")
+    print("Loading Data")
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
