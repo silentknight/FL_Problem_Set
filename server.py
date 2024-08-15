@@ -20,14 +20,6 @@ def main():
     strategy.min_evaluate_clients=0
     strategy.min_available_clients=50
 
-
-    print(strategy.fraction_fit)
-    print(strategy.fraction_evaluate)
-    print(strategy.min_fit_clients)
-    print(strategy.min_evaluate_clients)
-    print(strategy.min_available_clients)
-
-
     # Start Flower server
     fl.server.start_server(
         server_address="0.0.0.0:8080",
