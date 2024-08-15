@@ -49,14 +49,15 @@ def load_data():
 def iid_split(dataset, num_clients):
     """
     Splits the dataset into a IID distribution among clients.
-    
+
     Parameters:
     - dataset: The dataset to be split.
     - num_clients: The number of clients.
-    
+
     Returns:
     - A dictionary where keys are client indices and values are lists of dataset indices.
     """
+
     indices = np.random.permutation(len(dataset))
     split_indices = np.array_split(indices, num_clients)
 
@@ -83,37 +84,68 @@ class FlowerClient(fl.client.NumPyClient):
         self.optimizer = optim.SGD(self.model.classifier.parameters(), lr=0.001, momentum=0.9)
 
     def get_parameters(self, config):
+        print("Getting model parameters")
         return [val.cpu().detach().numpy() for val in self.model.parameters()]
 
     def set_parameters(self, parameters):
+        print("Setting model parameters")
         for val, param in zip(parameters, self.model.parameters()):
             param.data = torch.tensor(val).to(self.device)
 
     def fit(self, parameters, config):
+        print("Starting training round")
         self.set_parameters(parameters)
         self.model.train()
         for epoch in range(1):  # single epoch for demo
-            print(epoch)
-            for inputs, labels in self.trainloader:
+            running_loss = 0.0
+            for i, (inputs, labels) in self.trainloader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
-                print(loss)
+
+                running_loss += loss.item()
+                if i % 10 == 9:  # Print every 10 batches
+                    print(f"Batch {i+1}: Loss = {running_loss / 10:.4f}")
+                    running_loss = 0.0
+
+        print("Training round completed")
         return self.get_parameters(), len(self.trainloader.dataset), {}
 
     def evaluate(self, parameters, config):
+        print("Starting evaluation")
         self.set_parameters(parameters)
         self.model.eval()
-        loss, correct = 0, 0
+        loss = 0
+        correct = 0,
+        # x_true = []
+        # y_true = []
+
         with torch.no_grad():
             for inputs, labels in self.testloader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 outputs = self.model(inputs)
                 loss += self.criterion(outputs, labels).item()
                 correct += (outputs.argmax(1) == labels).type(torch.float).sum().item()
+
+                pred = outputs.argmax(dim=1, keepdim=True)
+                correct += pred.eq(labels.view_as(pred)).sum().item()
+
+                # y_true.extend(labels.numpy())
+                # y_pred.extend(predicted.numpy())
+
+        accuracy = correct / len(self.test_data)
+
+        # accuracy = accuracy_score(y_true, y_pred)
+        # precision = precision_score(y_true, y_pred, average='macro')
+        # recall = recall_score(y_true, y_pred, average='macro')
+        # f1 = f1_score(y_true, y_pred, average='macro')
+
+        print(f"Evaluation completed: Loss = {loss / len(test_loader):.4f}, Accuracy = {accuracy:.4f}")
+
+        # return accuracy, precision, recall, f1
         return float(loss) / len(self.testloader.dataset), len(self.testloader.dataset), {"accuracy": correct / len(self.testloader.dataset)}
 
 def main():
