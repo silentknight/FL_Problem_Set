@@ -5,12 +5,6 @@ import numpy as np
 def main():
     # Define strategy
     class ModelStrategy(fl.server.strategy.FedAvg):
-        fraction_fit=0.5,
-        fraction_evaluate=0.5,
-        min_fit_clients=50,
-        min_evaluate_clients=50,
-        min_available_clients=100
-
         def aggregate_fit(self, rnd, results, failures):
             aggregated_weights = super().aggregate_fit(rnd, results, failures)
             if aggregated_weights is not None:
@@ -19,6 +13,20 @@ def main():
             return aggregated_weights
 
     strategy = ModelStrategy()
+
+    strategy.fraction_fit=1.0
+    strategy.fraction_evaluate=0.0
+    strategy.min_fit_clients=1
+    strategy.min_evaluate_clients=0
+    strategy.min_available_clients=50
+
+
+    print(strategy.fraction_fit)
+    print(strategy.fraction_evaluate)
+    print(strategy.min_fit_clients)
+    print(strategy.min_evaluate_clients)
+    print(strategy.min_available_clients)
+
 
     # Start Flower server
     fl.server.start_server(
